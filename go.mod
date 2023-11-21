@@ -4,6 +4,9 @@ go 1.21.3
 
 require (
 	fyne.io/fyne/v2 v2.4.1
+	github.com/adrg/xdg v0.4.0
+	github.com/deepakjois/gousbdrivedetector v0.0.0-20220514003247-ea439de1c459
+	github.com/fsnotify/fsnotify v1.6.0
 	github.com/ncruces/zenity v0.10.10
 )
 
@@ -13,7 +16,6 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dchest/jsmin v0.0.0-20220218165748-59f39799265f // indirect
 	github.com/fredbi/uri v1.0.0 // indirect
-	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/fyne-io/gl-js v0.0.0-20220119005834-d2da28d9ccfe // indirect
 	github.com/fyne-io/glfw-js v0.0.0-20220120001248-ee7290d23504 // indirect
 	github.com/fyne-io/image v0.0.0-20220602074514-4956b0afb3d2 // indirect
