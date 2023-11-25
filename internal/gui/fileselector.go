@@ -21,7 +21,7 @@ import (
 	"github.com/fsnotify/fsnotify"
 )
 
-type fileItem struct {
+type FileItem struct {
 	widget.BaseWidget
 
 	obj *fyne.Container
@@ -33,7 +33,7 @@ type fileItem struct {
 	Overlay     *canvas.Rectangle
 }
 
-func (itm *fileItem) overlayColor() color.Color {
+func (itm *FileItem) overlayColor() color.Color {
 	s := fyne.CurrentApp().Settings()
 	return s.Theme().Color(
 		theme.ColorNameSelection,
@@ -41,8 +41,8 @@ func (itm *fileItem) overlayColor() color.Color {
 	)
 }
 
-func newFileItem(label string, onTapped func(), icon fyne.Resource, onIconTapped func()) *fileItem {
-	itm := &fileItem{
+func NewFileItem(label string, onTapped func(), icon fyne.Resource, onIconTapped func()) *FileItem {
+	itm := &FileItem{
 		LabelIcon:   widget.NewIcon(nil),
 		Label:       widget.NewLabel(label),
 		LabelButton: widget.NewButton("", onTapped),
@@ -52,7 +52,7 @@ func newFileItem(label string, onTapped func(), icon fyne.Resource, onIconTapped
 	return itm
 }
 
-func (itm *fileItem) ExtendBaseWidget(w fyne.Widget) {
+func (itm *FileItem) ExtendBaseWidget(w fyne.Widget) {
 	itm.BaseWidget.ExtendBaseWidget(w)
 	itm.Label.Truncation = fyne.TextTruncateEllipsis
 	itm.Overlay = canvas.NewRectangle(itm.overlayColor())
@@ -73,12 +73,12 @@ func (itm *fileItem) ExtendBaseWidget(w fyne.Widget) {
 	)
 }
 
-func (itm *fileItem) Refresh() {
+func (itm *FileItem) Refresh() {
 	itm.Overlay.FillColor = itm.overlayColor()
 	itm.obj.Refresh()
 }
 
-func (itm *fileItem) CreateRenderer() fyne.WidgetRenderer {
+func (itm *FileItem) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(itm.obj)
 }
 
@@ -111,7 +111,7 @@ func (fl *fileList) ExtendBaseWidget(w fyne.Widget) {
 		func() int {
 			return len(fl.entries)
 		}, func() fyne.CanvasObject {
-			item := newFileItem(
+			item := NewFileItem(
 				"PLACEHOLDER",
 				nil,
 				theme.ContentAddIcon(),
@@ -120,7 +120,7 @@ func (fl *fileList) ExtendBaseWidget(w fyne.Widget) {
 			item.LabelButton.Disable()
 			return item
 		}, func(id widget.ListItemID, obj fyne.CanvasObject) {
-			item := obj.(*fileItem)
+			item := obj.(*FileItem)
 			entry := fl.entries[id]
 			item.Label.SetText(entry.Name())
 			if fl.entries[id].IsDir() {
@@ -358,7 +358,7 @@ func (f *FileSelector) ExtendBaseWidget(w fyne.Widget) {
 	f.BaseWidget.ExtendBaseWidget(w)
 	f.selected = make(map[string]struct{})
 	f.pathEntry = widget.NewEntry()
-	f.pathEntry.Validator = func(s string) error {return nil}
+	f.pathEntry.Validator = func(s string) error { return nil }
 	f.pathEntry.OnChanged = func(s string) {
 		if s != f.path {
 			_, err := os.Stat(s)
@@ -438,7 +438,7 @@ func (f *FileSelector) ExtendBaseWidget(w fyne.Widget) {
 					f.backButton,
 					f.forwardButton,
 				)),
-				container.NewHScroll(f.pathEntry),
+				f.pathEntry,
 			),
 			f.filter,
 			quickAccessAccordion,
@@ -531,11 +531,17 @@ func (f *FileSelector) IsSelected(path string) bool {
 
 func (f *FileSelector) Select(path string) {
 	f.selected[path] = struct{}{}
+	if f.OnSelected != nil {
+		f.OnSelected(path)
+	}
 	f.refreshList()
 }
 
 func (f *FileSelector) Unselect(path string) {
 	delete(f.selected, path)
+	if f.OnUnselected != nil {
+		f.OnUnselected(path)
+	}
 	f.refreshList()
 }
 
