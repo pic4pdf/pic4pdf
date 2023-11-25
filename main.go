@@ -15,6 +15,7 @@ import (
 func main() {
 	a := app.NewWithID("com.pic4pdf")
 	w := a.NewWindow("pic4pdf")
+	w.Resize(fyne.NewSize(800, 600))
 
 	fileSel := gui.NewFileSelectorPersistent("Main")
 	closeWatcher := fileSel.CreateSimpleWatcher()
@@ -57,9 +58,21 @@ func main() {
 		fileList.Refresh()
 	}
 
-	w.SetContent(container.NewHSplit(
+	split := container.NewHSplit(
 		fileSel,
-		fileList,
-	))
+		container.NewBorder(
+			container.NewBorder(nil, nil, nil, container.NewHBox(
+				widget.NewButtonWithIcon("", theme.MenuDropDownIcon(), func() {}),
+				widget.NewButtonWithIcon("", theme.MenuDropUpIcon(), func() {}),
+				widget.NewButtonWithIcon("", theme.MoveDownIcon(), func() {}),
+				widget.NewButtonWithIcon("", theme.MoveUpIcon(), func() {}),
+			)),
+			nil, nil, nil,
+			fileList,
+		),
+	)
+	split.Offset = 0.6
+
+	w.SetContent(split)
 	w.ShowAndRun()
 }
