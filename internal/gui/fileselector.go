@@ -174,7 +174,7 @@ func (fl *fileList) CreateRenderer() fyne.WidgetRenderer {
 type FileSelector struct {
 	widget.BaseWidget
 
-	label         *widget.Label
+	pathEntry     *widget.Entry
 	backButton    *widget.Button
 	forwardButton *widget.Button
 	showHidden    *widget.Check
@@ -235,7 +235,9 @@ func (f *FileSelector) refreshList() {
 			f.listMessage.SetText("This folder contains no matching files.")
 		}
 	}
-	f.label.SetText(f.path)
+	f.pathEntry.Text = f.path
+	f.pathEntry.CursorColumn = len(f.path)
+	f.pathEntry.Refresh()
 	if len(f.next) == 0 {
 		f.forwardButton.Disable()
 	} else {
@@ -355,7 +357,17 @@ func NewFileSelectorPersistent(preferencesID string) *FileSelector {
 func (f *FileSelector) ExtendBaseWidget(w fyne.Widget) {
 	f.BaseWidget.ExtendBaseWidget(w)
 	f.selected = make(map[string]struct{})
-	f.label = widget.NewLabel("")
+	f.pathEntry = widget.NewEntry()
+	f.pathEntry.Validator = func(s string) error {return nil}
+	f.pathEntry.OnChanged = func(s string) {
+		if s != f.path {
+			_, err := os.Stat(s)
+			if err == nil {
+				f.cd(s)
+			}
+			f.pathEntry.SetValidationError(err)
+		}
+	}
 	f.backButton = widget.NewButtonWithIcon("", theme.NavigateBackIcon(), func() {
 		f.back()
 		f.filter.SetText("")
@@ -368,9 +380,21 @@ func (f *FileSelector) ExtendBaseWidget(w fyne.Widget) {
 		f.refreshList()
 	})
 	f.filter = widget.NewEntry()
-	f.filter.ActionItem = widget.NewIcon(theme.SearchIcon())
+	searchIcon := widget.NewIcon(theme.SearchIcon())
+	clearButton := widget.NewButtonWithIcon("", theme.CancelIcon(), func() {
+		f.filter.SetText("")
+	})
+	clearButton.Hide()
+	f.filter.ActionItem = container.NewStack(searchIcon, clearButton)
 	f.filter.PlaceHolder = "Filter"
-	f.filter.OnChanged = func(string) {
+	f.filter.OnChanged = func(s string) {
+		if s == "" {
+			searchIcon.Show()
+			clearButton.Hide()
+		} else {
+			searchIcon.Hide()
+			clearButton.Show()
+		}
 		f.refreshList()
 	}
 	f.quickAccess = container.NewGridWithColumns(3)
@@ -414,7 +438,7 @@ func (f *FileSelector) ExtendBaseWidget(w fyne.Widget) {
 					f.backButton,
 					f.forwardButton,
 				)),
-				container.NewHScroll(f.label),
+				container.NewHScroll(f.pathEntry),
 			),
 			f.filter,
 			quickAccessAccordion,
