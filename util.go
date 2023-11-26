@@ -1,4 +1,5 @@
 package main
+/*
 
 import (
 	"fmt"
@@ -30,3 +31,4 @@ func (t *tappableCard) Tapped(_ *fyne.PointEvent) {
 func (t *tappableCard) TappedSecondary(_ *fyne.PointEvent) {
 
 }
+*/
