@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"image"
+	_ "image/jpeg"
+	_ "image/png"
 	"os"
 
 	"fyne.io/fyne/v2"
@@ -23,19 +25,13 @@ func main() {
 	closeWatcher := fileSel.CreateSimpleWatcher()
 	defer closeWatcher()
 
-	f, err := os.Open("../lib-p4p/gophers/gopher1.jpg")
-	if err != nil {
-		panic(err)
-	}
-	defer f.Close()
-	img, _, err := image.Decode(f)
-	if err != nil {
-		panic(err)
-	}
+	fileOw := gui.NewFileOverview(fileSel)
+
+	imgs := make(map[string]image.Image)
 
 	l := widget.NewList(
 		func() int {
-			return 10
+			return len(fileSel.Selected())
 		},
 		func() fyne.CanvasObject {
 			iv := gui.NewPDFImageView(p4p.Millimeter, p4p.A4())
@@ -43,22 +39,48 @@ func main() {
 			return iv
 		},
 		func(id widget.ListItemID, obj fyne.CanvasObject) {
+			sel := fileSel.Selected()
 			iv := obj.(*gui.PDFImageView)
-			iv.SetDescription(fmt.Sprintf("%v/%v", id+1, 10))
-			iv.SetOptions(p4p.ImageOptions{
-				Mode: p4p.Fill,
-			})
-			iv.SetImage(img)
+			iv.SetDescription(fmt.Sprintf("%v/%v", id+1, len(sel)))
+			if id < len(sel) {
+				if img, ok := imgs[sel[id]]; ok {
+					mode := p4p.Fit
+					scale := float64(1)
+					iv.SetOptions(p4p.ImageOptions{
+						Mode: mode,
+						Scale: scale,
+					})
+					iv.SetImage(img)
+				}
+			}
 		},
 	)
 	l.OnSelected = func(widget.ListItemID) {
 		l.UnselectAll()
 	}
 
+	fileOw.OnSelected = func(path string) {
+		f, err := os.Open(path)
+		if err != nil {
+			panic(err)
+		}
+		defer f.Close()
+		img, _, err := image.Decode(f)
+		if err != nil {
+			panic(err)
+		}
+		imgs[path] = img
+		l.Refresh()
+	}
+	fileOw.OnUnselected = func(path string) {
+		delete(imgs, path)
+		l.Refresh()
+	}
+
 	split := container.NewHSplit(
 		container.NewHSplit(
 			fileSel,
-			gui.NewFileOverview(fileSel),
+			fileOw,
 		),
 		l,
 	)

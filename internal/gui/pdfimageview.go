@@ -9,6 +9,7 @@ import (
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/widget"
 	p4p "github.com/pic4pdf/lib-p4p"
+	"golang.org/x/image/draw"
 )
 
 type PDFImageView struct {
@@ -20,6 +21,14 @@ type PDFImageView struct {
 	imgData image.Image
 	unit p4p.Unit
 	pageSize p4p.PageSize
+	// Max image size in pixels, for rendering optimization
+	maxImgW int
+	maxImgH int
+	// Image layout in PDF units
+	imgX float64
+	imgY float64
+	imgW float64
+	imgH float64
 
 	img *canvas.Image
 	desc *widget.Label
@@ -32,16 +41,34 @@ func (iv *PDFImageView) rerenderImage() {
 		iv.lock.Unlock()
 		return
 	}
-	var img image.Image
-	pxBounds := iv.imgData.Bounds()
+	img := iv.imgData
+	pxBounds := img.Bounds()
 	if x1, y1, x2, y2, mustCrop := iv.pdf.CalcImageCropCoords(pxBounds.Dx(), pxBounds.Dy(), iv.imgOpts); mustCrop {
-		if subImg, ok := iv.imgData.(interface{SubImage(r image.Rectangle) image.Image}); ok {
+		if subImg, ok := img.(interface{SubImage(r image.Rectangle) image.Image}); ok {
 			img = subImg.SubImage(image.Rect(x1, y1, x2, y2))
 		} else {
 			panic("image must support SubImage")
 		}
-	} else {
-		img = iv.imgData
+	}
+	{
+		b := img.Bounds()
+		iv.imgX, iv.imgY, iv.imgW, iv.imgH = iv.pdf.CalcImageLayout(b.Dx(), b.Dy(), iv.imgOpts)
+	}
+	{
+		src := img
+		srcSz := src.Bounds().Size()
+		dstSz := srcSz
+		if dstSz.X > iv.maxImgW {
+			dstSz.X = iv.maxImgW
+			dstSz.Y = int(float64(srcSz.Y) * (float64(dstSz.X) / float64(srcSz.X)))
+		}
+		if dstSz.Y > iv.maxImgH {
+			dstSz.Y = iv.maxImgH
+			dstSz.X = int(float64(srcSz.X) * (float64(dstSz.Y) / float64(srcSz.Y)))
+		}
+		dst := image.NewRGBA(image.Rect(0, 0, dstSz.X, dstSz.Y))
+		draw.NearestNeighbor.Scale(dst, dst.Rect, src, src.Bounds(), draw.Over, nil)
+		img = dst
 	}
 	iv.img = canvas.NewImageFromImage(img)
 	iv.lock.Unlock()
@@ -53,9 +80,14 @@ func NewPDFImageView(unit p4p.Unit, pageSize p4p.PageSize) *PDFImageView {
 		desc: widget.NewLabel(""),
 		unit: unit,
 		pageSize: pageSize,
+		maxImgW: 600,
+		maxImgH: 600,
 	}
 	iv.ExtendBaseWidget(iv)
 	return iv
+}
+
+func (iv *PDFImageView) SetMaxImageRenderSize(w, h int) {
 }
 
 func (iv *PDFImageView) SetMinSize(size fyne.Size) {
@@ -155,15 +187,13 @@ func (r *pdfImageViewRenderer) Layout(size fyne.Size) {
 	}
 	oX, oY := (size.Width-effSize.Width)/2, (size.Height-effSize.Height)/2
 	if r.iv.img != nil {
-		pxBounds := r.iv.img.Image.Bounds()
-		imgX, imgY, imgW, imgH := r.iv.pdf.CalcImageLayout(pxBounds.Dx(), pxBounds.Dy(), r.iv.imgOpts)
 		r.iv.img.Move(fyne.NewPos(
-			float32(imgX / pgW) * effSize.Width,
-			float32(imgY / pgH) * effSize.Height,
+			float32(r.iv.imgX / pgW) * effSize.Width,
+			float32(r.iv.imgY / pgH) * effSize.Height,
 		).AddXY(oX, oY))
 		r.iv.img.Resize(fyne.NewSize(
-			float32(imgW / pgW) * effSize.Width,
-			float32(imgH / pgH) * effSize.Height,
+			float32(r.iv.imgW / pgW) * effSize.Width,
+			float32(r.iv.imgH / pgH) * effSize.Height,
 		))
 	}
 	r.iv.desc.Move(fyne.NewPos(5, 5).AddXY(oX, oY))

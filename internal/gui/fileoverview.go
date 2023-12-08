@@ -20,12 +20,16 @@ type FileOverview struct {
 	list *widget.List
 	obj *fyne.Container
 
+	OnSelected   func(path string)
+	OnUnselected func(path string)
+
 	FileSelector *FileSelector
 
 	paths []string
 }
 
 // Sets fileSelector.OnSelected and OnUnselected!
+// Plase use FileOverview.OnSelected and OnUnselected instead.
 func NewFileOverview(fileSelector *FileSelector) *FileOverview {
 	fl := &FileOverview{
 		FileSelector: fileSelector,
@@ -34,11 +38,11 @@ func NewFileOverview(fileSelector *FileSelector) *FileOverview {
 	return fl
 }
 
-func (fl *FileOverview) ExtendBaseWidget(w fyne.Widget) {
-	fl.BaseWidget.ExtendBaseWidget(w)
-	fl.list = widget.NewList(
+func (fo *FileOverview) ExtendBaseWidget(w fyne.Widget) {
+	fo.BaseWidget.ExtendBaseWidget(w)
+	fo.list = widget.NewList(
 		func() int {
-			return len(fl.paths)
+			return len(fo.paths)
 		}, func() fyne.CanvasObject {
 			item := newFileItem(
 				"PLACEHOLDER",
@@ -50,35 +54,35 @@ func (fl *FileOverview) ExtendBaseWidget(w fyne.Widget) {
 			return item
 		}, func(id widget.ListItemID, obj fyne.CanvasObject) {
 			item := obj.(*FileItem)
-			item.Label.SetText(filepath.Base(fl.paths[id]))
+			item.Label.SetText(filepath.Base(fo.paths[id]))
 			item.LabelIcon.SetResource(theme.FileImageIcon())
 			item.IconButton.OnTapped = func() {
-				fl.FileSelector.Unselect(fl.paths[id])
+				fo.FileSelector.Unselect(fo.paths[id])
 			}
 		},
 	)
 
 	var moveFileItem func(up bool, full bool)
-	fl.moveDown = widget.NewButtonWithIcon("", theme.MenuDropDownIcon(), func() {moveFileItem(false, false)})
-	fl.moveUp = widget.NewButtonWithIcon("", theme.MenuDropUpIcon(), func() {moveFileItem(true, false)})
-	fl.moveDownFull = widget.NewButtonWithIcon("", theme.MoveDownIcon(), func() {moveFileItem(false, true)})
-	fl.moveUpFull = widget.NewButtonWithIcon("", theme.MoveUpIcon(), func() {moveFileItem(true, true)})
+	fo.moveDown = widget.NewButtonWithIcon("", theme.MenuDropDownIcon(), func() {moveFileItem(false, false)})
+	fo.moveUp = widget.NewButtonWithIcon("", theme.MenuDropUpIcon(), func() {moveFileItem(true, false)})
+	fo.moveDownFull = widget.NewButtonWithIcon("", theme.MoveDownIcon(), func() {moveFileItem(false, true)})
+	fo.moveUpFull = widget.NewButtonWithIcon("", theme.MoveUpIcon(), func() {moveFileItem(true, true)})
 	selectedFileID := -1
 
-	fl.list.OnSelected = func(id widget.ListItemID) {
-		if id == len(fl.paths)-1 {
-			fl.moveDown.Disable()
-			fl.moveDownFull.Disable()
+	fo.list.OnSelected = func(id widget.ListItemID) {
+		if id == len(fo.paths)-1 {
+			fo.moveDown.Disable()
+			fo.moveDownFull.Disable()
 		} else {
-			fl.moveDown.Enable()
-			fl.moveDownFull.Enable()
+			fo.moveDown.Enable()
+			fo.moveDownFull.Enable()
 		}
 		if id == 0 {
-			fl.moveUp.Disable()
-			fl.moveUpFull.Disable()
+			fo.moveUp.Disable()
+			fo.moveUpFull.Disable()
 		} else {
-			fl.moveUp.Enable()
-			fl.moveUpFull.Enable()
+			fo.moveUp.Enable()
+			fo.moveUpFull.Enable()
 		}
 		selectedFileID = id
 	}
@@ -89,21 +93,21 @@ func (fl *FileOverview) ExtendBaseWidget(w fyne.Widget) {
 			return
 		}
 		defer func() {
-			fl.list.Select(id)
-			fl.list.Refresh()
+			fo.list.Select(id)
+			fo.list.Refresh()
 		}()
 		for {
 			if up {
 				if id == 0 {
 					return
 				}
-				fl.paths[id], fl.paths[id-1] = fl.paths[id-1], fl.paths[id]
+				fo.paths[id], fo.paths[id-1] = fo.paths[id-1], fo.paths[id]
 				id = id-1
 			} else {
-				if id == len(fl.paths)-1 {
+				if id == len(fo.paths)-1 {
 					return
 				}
-				fl.paths[id], fl.paths[id+1] = fl.paths[id+1], fl.paths[id]
+				fo.paths[id], fo.paths[id+1] = fo.paths[id+1], fo.paths[id]
 				id = id+1
 			}
 			if !full {
@@ -112,32 +116,38 @@ func (fl *FileOverview) ExtendBaseWidget(w fyne.Widget) {
 		}
 	}
 
-	fl.FileSelector.OnSelected = func(path string) {
-		if slices.Index[[]string, string](fl.paths, path) == -1 {
-			fl.paths = append(fl.paths, path)
+	fo.FileSelector.OnSelected = func(path string) {
+		if slices.Index[[]string, string](fo.paths, path) == -1 {
+			fo.paths = append(fo.paths, path)
 		}
-		fl.list.Refresh()
+		if fo.OnSelected != nil {
+			fo.OnSelected(path)
+		}
+		fo.list.Refresh()
 	}
 
-	fl.FileSelector.OnUnselected = func(path string) {
-		if idx := slices.Index[[]string, string](fl.paths, path); idx != -1 {
-			fl.paths = append(fl.paths[:idx], fl.paths[idx+1:]...)
+	fo.FileSelector.OnUnselected = func(path string) {
+		if idx := slices.Index[[]string, string](fo.paths, path); idx != -1 {
+			fo.paths = append(fo.paths[:idx], fo.paths[idx+1:]...)
 		}
-		fl.list.Refresh()
+		if fo.OnUnselected != nil {
+			fo.OnUnselected(path)
+		}
+		fo.list.Refresh()
 	}
 
-	fl.obj = container.NewBorder(
+	fo.obj = container.NewBorder(
 		container.NewBorder(nil, nil, nil, container.NewHBox(
-			fl.moveDown,
-			fl.moveUp,
-			fl.moveDownFull,
-			fl.moveUpFull,
+			fo.moveDown,
+			fo.moveUp,
+			fo.moveDownFull,
+			fo.moveUpFull,
 		)),
 		nil, nil, nil,
-		fl.list,
+		fo.list,
 	)
 }
 
-func (fl *FileOverview) CreateRenderer() fyne.WidgetRenderer {
-	return widget.NewSimpleRenderer(fl.obj)
+func (fo *FileOverview) CreateRenderer() fyne.WidgetRenderer {
+	return widget.NewSimpleRenderer(fo.obj)
 }
