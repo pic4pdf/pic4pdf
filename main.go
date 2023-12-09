@@ -6,6 +6,7 @@ import (
 	_ "image/jpeg"
 	_ "image/png"
 	"os"
+	"path/filepath"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
@@ -44,8 +45,8 @@ func main() {
 		func(id widget.ListItemID, obj fyne.CanvasObject) {
 			sel := fileOw.Selected()
 			iv := obj.(*gui.PDFImageView)
-			iv.SetDescription(fmt.Sprintf("%v/%v", id+1, len(sel)))
 			if id < len(sel) {
+                iv.SetDescription(fmt.Sprintf("%v/%v (%v)", id+1, len(sel), filepath.Base(sel[id])))
 				if img, ok := imgs[sel[id]]; ok {
 					iv.SetOptions(p4p.ImageOptions{
 						Mode: layoutMode,
