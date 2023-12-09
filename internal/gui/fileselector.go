@@ -482,6 +482,10 @@ func (f *FileSelector) Unselect(path string) {
 	f.refreshList()
 }
 
+func (f *FileSelector) NumSelected() int {
+	return len(f.selected)
+}
+
 func (f *FileSelector) Selected() (paths []string) {
 	paths = make([]string, 0, len(f.selected))
 	for p := range f.selected {

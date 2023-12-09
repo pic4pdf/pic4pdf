@@ -31,15 +31,15 @@ func main() {
 
 	l := widget.NewList(
 		func() int {
-			return len(fileSel.Selected())
+			return fileOw.NumSelected()
 		},
 		func() fyne.CanvasObject {
 			iv := gui.NewPDFImageView(p4p.Millimeter, p4p.A4())
-			iv.SetMinSize(fyne.NewSize(0, 400))
+			iv.SetMinSize(fyne.NewSize(0, 300))
 			return iv
 		},
 		func(id widget.ListItemID, obj fyne.CanvasObject) {
-			sel := fileSel.Selected()
+			sel := fileOw.Selected()
 			iv := obj.(*gui.PDFImageView)
 			iv.SetDescription(fmt.Sprintf("%v/%v", id+1, len(sel)))
 			if id < len(sel) {

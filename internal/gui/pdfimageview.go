@@ -97,6 +97,7 @@ func (iv *PDFImageView) SetMinSize(size fyne.Size) {
 	iv.Refresh()
 }
 
+// Will update only if the parameters differ from the previous ones.
 func (iv *PDFImageView) SetParams(unit p4p.Unit, pageSize p4p.PageSize) {
 	iv.lock.Lock()
 	if unit == iv.unit && pageSize == iv.pageSize {
@@ -111,14 +112,20 @@ func (iv *PDFImageView) SetParams(unit p4p.Unit, pageSize p4p.PageSize) {
 	iv.Refresh()
 }
 
+// Will update only if opts differ from the previous options.
 func (iv *PDFImageView) SetOptions(opts p4p.ImageOptions) {
 	iv.lock.Lock()
+	if iv.imgOpts == opts {
+		iv.lock.Unlock()
+		return
+	}
 	iv.imgOpts = opts
 	iv.lock.Unlock()
 	iv.rerenderImage()
 	iv.Refresh()
 }
 
+// Will only update if img differs from the previous image.
 func (iv *PDFImageView) SetImage(img image.Image) {
 	iv.lock.Lock()
 	if iv.imgData == img {

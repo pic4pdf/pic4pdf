@@ -151,3 +151,13 @@ func (fo *FileOverview) ExtendBaseWidget(w fyne.Widget) {
 func (fo *FileOverview) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(fo.obj)
 }
+
+func (fo *FileOverview) NumSelected() int {
+	return len(fo.paths)
+}
+
+func (fo *FileOverview) Selected() []string {
+	res := make([]string, len(fo.paths))
+	copy(res, fo.paths)
+	return res
+}
