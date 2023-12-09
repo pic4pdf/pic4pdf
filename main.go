@@ -10,6 +10,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/pic4pdf/lib-p4p"
 
@@ -26,6 +27,8 @@ func main() {
 	defer closeWatcher()
 
 	fileOw := gui.NewFileOverview(fileSel)
+	layoutMode := p4p.Fit
+	scale := float64(1)
 
 	imgs := make(map[string]image.Image)
 
@@ -44,10 +47,8 @@ func main() {
 			iv.SetDescription(fmt.Sprintf("%v/%v", id+1, len(sel)))
 			if id < len(sel) {
 				if img, ok := imgs[sel[id]]; ok {
-					mode := p4p.Fit
-					scale := float64(1)
 					iv.SetOptions(p4p.ImageOptions{
-						Mode: mode,
+						Mode: layoutMode,
 						Scale: scale,
 					})
 					iv.SetImage(img)
@@ -80,12 +81,63 @@ func main() {
 		l.Refresh()
 	}
 
+	var options *widget.Accordion
+	{
+		var scaleSld *widget.Slider
+		layoutModeSel := widget.NewSelect(
+			[]string{"Center", "Fill", "Fit"},
+			func(s string) {
+				switch s {
+				case "Center":
+					layoutMode = p4p.Center
+				case "Fill":
+					layoutMode = p4p.Fill
+				case "Fit":
+					layoutMode = p4p.Fit
+				}
+				scaleSld.SetValue(1)
+				l.Refresh()
+			},
+		)
+		layoutModeSel.Selected = "Fit"
+		scaleLabel := widget.NewLabel(fmt.Sprintf("%.1f", scale))
+		var scaleReset *widget.Button
+		scaleSld = widget.NewSlider(0.2, 4)
+		scaleSld.Value = scale
+		scaleSld.Step = 0.1
+		scaleSld.OnChanged = func(v float64) {
+			if v == 1 {
+				scaleReset.Disable()
+			} else {
+				scaleReset.Enable()
+			}
+			scaleLabel.SetText(fmt.Sprintf("%.1f", v))
+		}
+		scaleSld.OnChangeEnded = func(v float64) {
+			scale = v
+			l.Refresh()
+		}
+		scaleReset = widget.NewButtonWithIcon("", theme.ContentUndoIcon(), func() {
+			scaleSld.SetValue(1)
+		})
+		scaleReset.Disable()
+		form := widget.NewForm(
+			widget.NewFormItem("Layout Mode", layoutModeSel),
+			widget.NewFormItem("Scale", container.NewBorder(nil, nil, scaleLabel, scaleReset, scaleSld)),
+		)
+		optsItem := widget.NewAccordionItem("Options", form)
+		optsItem.Open = true
+		options = widget.NewAccordion(optsItem)
+	}
+
 	split := container.NewHSplit(
 		container.NewHSplit(
 			fileSel,
 			fileOw,
 		),
-		l,
+		container.NewBorder(
+			nil, options, nil, nil, l,
+		),
 	)
 	split.Offset = 0.6
 

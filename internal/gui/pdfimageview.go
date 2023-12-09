@@ -1,8 +1,10 @@
 package gui
 
 import (
+	"fmt"
 	"image"
 	"image/color"
+	"math/rand"
 	"sync"
 
 	"fyne.io/fyne/v2"
@@ -36,6 +38,7 @@ type PDFImageView struct {
 }
 
 func (iv *PDFImageView) rerenderImage() {
+	fmt.Printf("Rerender (rand ID: %02x)\n", rand.Intn(0xFF))
 	iv.lock.Lock()
 	if iv.imgData == nil {
 		iv.lock.Unlock()
