@@ -5,20 +5,20 @@ import (
 	"slices"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
 
 type FileOverview struct {
 	widget.BaseWidget
 
-	moveDown *widget.Button
-	moveUp *widget.Button
+	moveDown     *widget.Button
+	moveUp       *widget.Button
 	moveDownFull *widget.Button
-	moveUpFull *widget.Button
-	list *widget.List
-	obj *fyne.Container
+	moveUpFull   *widget.Button
+	list         *widget.List
+	obj          *fyne.Container
 
 	OnSelected   func(path string)
 	OnUnselected func(path string)
@@ -64,10 +64,10 @@ func (fo *FileOverview) ExtendBaseWidget(w fyne.Widget) {
 	)
 
 	var moveFileItem func(up bool, full bool)
-	fo.moveDown = widget.NewButtonWithIcon("", theme.MenuDropDownIcon(), func() {moveFileItem(false, false)})
-	fo.moveUp = widget.NewButtonWithIcon("", theme.MenuDropUpIcon(), func() {moveFileItem(true, false)})
-	fo.moveDownFull = widget.NewButtonWithIcon("", theme.MoveDownIcon(), func() {moveFileItem(false, true)})
-	fo.moveUpFull = widget.NewButtonWithIcon("", theme.MoveUpIcon(), func() {moveFileItem(true, true)})
+	fo.moveDown = widget.NewButtonWithIcon("", theme.MenuDropDownIcon(), func() { moveFileItem(false, false) })
+	fo.moveUp = widget.NewButtonWithIcon("", theme.MenuDropUpIcon(), func() { moveFileItem(true, false) })
+	fo.moveDownFull = widget.NewButtonWithIcon("", theme.MoveDownIcon(), func() { moveFileItem(false, true) })
+	fo.moveUpFull = widget.NewButtonWithIcon("", theme.MoveUpIcon(), func() { moveFileItem(true, true) })
 	selectedFileID := -1
 
 	fo.list.OnSelected = func(id widget.ListItemID) {
@@ -106,13 +106,13 @@ func (fo *FileOverview) ExtendBaseWidget(w fyne.Widget) {
 					return
 				}
 				fo.paths[id], fo.paths[id-1] = fo.paths[id-1], fo.paths[id]
-				id = id-1
+				id = id - 1
 			} else {
 				if id == len(fo.paths)-1 {
 					return
 				}
 				fo.paths[id], fo.paths[id+1] = fo.paths[id+1], fo.paths[id]
-				id = id+1
+				id = id + 1
 			}
 			if !full {
 				return

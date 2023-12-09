@@ -17,11 +17,11 @@ import (
 type PDFImageView struct {
 	widget.BaseWidget
 
-	pdf *p4p.P4P
-	imgOpts p4p.ImageOptions
-	minSize fyne.Size
-	imgData image.Image
-	unit p4p.Unit
+	pdf      *p4p.P4P
+	imgOpts  p4p.ImageOptions
+	minSize  fyne.Size
+	imgData  image.Image
+	unit     p4p.Unit
 	pageSize p4p.PageSize
 	// Max image size in pixels, for rendering optimization
 	maxImgW int
@@ -32,7 +32,7 @@ type PDFImageView struct {
 	imgW float64
 	imgH float64
 
-	img *canvas.Image
+	img  *canvas.Image
 	desc *widget.Label
 	lock sync.Mutex
 }
@@ -47,7 +47,9 @@ func (iv *PDFImageView) rerenderImage() {
 	img := iv.imgData
 	pxBounds := img.Bounds()
 	if x1, y1, x2, y2, mustCrop := iv.pdf.CalcImageCropCoords(pxBounds.Dx(), pxBounds.Dy(), iv.imgOpts); mustCrop {
-		if subImg, ok := img.(interface{SubImage(r image.Rectangle) image.Image}); ok {
+		if subImg, ok := img.(interface {
+			SubImage(r image.Rectangle) image.Image
+		}); ok {
 			img = subImg.SubImage(image.Rect(x1, y1, x2, y2))
 		} else {
 			panic("image must support SubImage")
@@ -79,12 +81,12 @@ func (iv *PDFImageView) rerenderImage() {
 
 func NewPDFImageView(unit p4p.Unit, pageSize p4p.PageSize) *PDFImageView {
 	iv := &PDFImageView{
-		pdf: p4p.New(unit, pageSize),
-		desc: widget.NewLabel(""),
-		unit: unit,
+		pdf:      p4p.New(unit, pageSize),
+		desc:     widget.NewLabel(""),
+		unit:     unit,
 		pageSize: pageSize,
-		maxImgW: 600,
-		maxImgH: 600,
+		maxImgW:  600,
+		maxImgH:  600,
 	}
 	iv.ExtendBaseWidget(iv)
 	return iv
@@ -153,8 +155,8 @@ func (iv *PDFImageView) ExtendBaseWidget(w fyne.Widget) {
 
 func (iv *PDFImageView) CreateRenderer() fyne.WidgetRenderer {
 	r := &pdfImageViewRenderer{
-		iv: iv,
-		bg: canvas.NewRectangle(color.RGBA{255, 255, 255, 255}),
+		iv:       iv,
+		bg:       canvas.NewRectangle(color.RGBA{255, 255, 255, 255}),
 		descRect: canvas.NewRectangle(color.RGBA{128, 128, 128, 235}),
 	}
 	r.descRect.CornerRadius = 4
@@ -162,8 +164,8 @@ func (iv *PDFImageView) CreateRenderer() fyne.WidgetRenderer {
 }
 
 type pdfImageViewRenderer struct {
-	iv *PDFImageView
-	bg *canvas.Rectangle
+	iv       *PDFImageView
+	bg       *canvas.Rectangle
 	descRect *canvas.Rectangle
 
 	minSize fyne.Size
@@ -173,9 +175,9 @@ func (r *pdfImageViewRenderer) refreshMinSize() {
 	r.iv.lock.Lock()
 	pgW, pgH := r.iv.pdf.PageSize()
 	if r.iv.minSize.Width == 0 {
-		r.minSize = fyne.NewSize(r.iv.minSize.Height * float32(pgW) / float32(pgH), r.iv.minSize.Height)
+		r.minSize = fyne.NewSize(r.iv.minSize.Height*float32(pgW)/float32(pgH), r.iv.minSize.Height)
 	} else if r.iv.minSize.Height == 0 {
-		r.minSize = fyne.NewSize(r.iv.minSize.Width, r.iv.minSize.Width * float32(pgH) / float32(pgW))
+		r.minSize = fyne.NewSize(r.iv.minSize.Width, r.iv.minSize.Width*float32(pgH)/float32(pgW))
 	} else {
 		r.minSize = r.iv.minSize
 	}
@@ -191,19 +193,19 @@ func (r *pdfImageViewRenderer) Layout(size fyne.Size) {
 	pgW, pgH := r.iv.pdf.PageSize()
 	var effSize fyne.Size
 	if float32(pgW/pgH) > size.Width/size.Height {
-		effSize = fyne.NewSize(size.Width, size.Width * float32(pgH) / float32(pgW))
+		effSize = fyne.NewSize(size.Width, size.Width*float32(pgH)/float32(pgW))
 	} else {
-		effSize = fyne.NewSize(size.Height * float32(pgW) / float32(pgH), size.Height)
+		effSize = fyne.NewSize(size.Height*float32(pgW)/float32(pgH), size.Height)
 	}
 	oX, oY := (size.Width-effSize.Width)/2, (size.Height-effSize.Height)/2
 	if r.iv.img != nil {
 		r.iv.img.Move(fyne.NewPos(
-			float32(r.iv.imgX / pgW) * effSize.Width,
-			float32(r.iv.imgY / pgH) * effSize.Height,
+			float32(r.iv.imgX/pgW)*effSize.Width,
+			float32(r.iv.imgY/pgH)*effSize.Height,
 		).AddXY(oX, oY))
 		r.iv.img.Resize(fyne.NewSize(
-			float32(r.iv.imgW / pgW) * effSize.Width,
-			float32(r.iv.imgH / pgH) * effSize.Height,
+			float32(r.iv.imgW/pgW)*effSize.Width,
+			float32(r.iv.imgH/pgH)*effSize.Height,
 		))
 	}
 	r.iv.desc.Move(fyne.NewPos(5, 5).AddXY(oX, oY))

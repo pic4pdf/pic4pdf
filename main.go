@@ -46,10 +46,10 @@ func main() {
 			sel := fileOw.Selected()
 			iv := obj.(*gui.PDFImageView)
 			if id < len(sel) {
-                iv.SetDescription(fmt.Sprintf("%v/%v (%v)", id+1, len(sel), filepath.Base(sel[id])))
+				iv.SetDescription(fmt.Sprintf("%v/%v (%v)", id+1, len(sel), filepath.Base(sel[id])))
 				if img, ok := imgs[sel[id]]; ok {
 					iv.SetOptions(p4p.ImageOptions{
-						Mode: layoutMode,
+						Mode:  layoutMode,
 						Scale: scale,
 					})
 					iv.SetImage(img)
