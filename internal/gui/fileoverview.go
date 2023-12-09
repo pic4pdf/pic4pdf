@@ -22,6 +22,7 @@ type FileOverview struct {
 
 	OnSelected   func(path string)
 	OnUnselected func(path string)
+	OnReorder    func()
 
 	FileSelector *FileSelector
 
@@ -95,6 +96,9 @@ func (fo *FileOverview) ExtendBaseWidget(w fyne.Widget) {
 		defer func() {
 			fo.list.Select(id)
 			fo.list.Refresh()
+			if fo.OnReorder != nil {
+				fo.OnReorder()
+			}
 		}()
 		for {
 			if up {

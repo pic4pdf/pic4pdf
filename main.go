@@ -76,6 +76,9 @@ func main() {
 		delete(imgs, path)
 		l.Refresh()
 	}
+	fileOw.OnReorder = func() {
+		l.Refresh()
+	}
 
 	split := container.NewHSplit(
 		container.NewHSplit(
