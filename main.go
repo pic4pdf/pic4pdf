@@ -192,6 +192,6 @@ func ValidateFile(path string) error {
 	if !valid {
 		return errors.New("invalid file type")
 	}
-
+	f.Close()
 	return nil
 }
