@@ -1,19 +1,22 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"image"
 	_ "image/jpeg"
 	_ "image/png"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"github.com/pic4pdf/lib-p4p"
+	p4p "github.com/pic4pdf/lib-p4p"
 
 	"github.com/pic4pdf/pic4pdf/internal/gui"
 )
@@ -74,6 +77,18 @@ func main() {
 		imgs[path] = img
 		l.Refresh()
 	}
+
+	w.SetOnDropped(func(p fyne.Position, u []fyne.URI) {
+		for _, files := range u {
+			err := ValidateFile(files.Path())
+			if err != nil {
+				dialog.ShowError(fmt.Errorf("%v isn't a valid file.\nReason: %v", files.Path(), err), w)
+				return
+			}
+			fileSel.Select(files.Path())
+		}
+	})
+
 	fileOw.OnUnselected = func(path string) {
 		delete(imgs, path)
 		l.Refresh()
@@ -144,4 +159,39 @@ func main() {
 
 	w.SetContent(split)
 	w.ShowAndRun()
+}
+
+func ValidateFile(path string) error {
+	//Check if the file is valid, and then adds it to the selector
+	f, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	zeroBytes, _ := f.Stat()
+	if zeroBytes.Size() <= 1 {
+		return errors.New("file has 0 bytes")
+	}
+
+	/// Valid extensions: png, jpg, webp, jpeg
+	validExt := []string{".png", ".jpg", ".jpeg", ".webp", ".PNG", ".JPG", ".JPEG", ".WEBP"}
+
+	// Extract and normalize the file extension
+	fileExt := strings.ToLower(filepath.Ext(path))
+
+	// Check if the file extension is in the valid list
+	valid := false
+	for _, v := range validExt {
+		if fileExt == strings.ToLower(v) {
+			valid = true
+			break
+		}
+	}
+
+	if !valid {
+		return errors.New("invalid file type")
+	}
+
+	return nil
 }
