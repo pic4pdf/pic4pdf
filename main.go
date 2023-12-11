@@ -175,7 +175,7 @@ func ValidateFile(path string) error {
 	}
 
 	/// Valid extensions: png, jpg, webp, jpeg
-	validExt := []string{".png", ".jpg", ".jpeg", ".webp", ".PNG", ".JPG", ".JPEG", ".WEBP"}
+	validExt := []string{".png", ".jpg", ".jpeg", ".webp"}
 
 	// Extract and normalize the file extension
 	fileExt := strings.ToLower(filepath.Ext(path))
