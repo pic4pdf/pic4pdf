@@ -95,6 +95,11 @@ func NewPDFImageView(unit p4p.Unit, pageSize p4p.PageSize) *PDFImageView {
 }
 
 func (iv *PDFImageView) SetMaxImageRenderSize(w, h int) {
+	iv.lock.Lock()
+	iv.maxImgW = w
+	iv.maxImgH = h
+	iv.lock.Unlock()
+	iv.Refresh()
 }
 
 func (iv *PDFImageView) SetMinSize(size fyne.Size) {
