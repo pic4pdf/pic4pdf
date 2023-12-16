@@ -123,8 +123,8 @@ type FileSelector struct {
 
 	OnSelected    func(path string)
 	OnUnselected  func(path string)
-	ValidFilename func(name string) bool
 
+	validFilename func(name string) bool
 	path                 string
 	next                 []string
 	selected             map[string]struct{}
@@ -159,7 +159,7 @@ func (f *FileSelector) refreshList() {
 				continue
 			}
 		}
-		if ent.IsDir() || f.ValidFilename == nil || f.ValidFilename(name) {
+		if ent.IsDir() || f.validFilename == nil || f.validFilename(name) {
 			res = append(res, ent)
 		}
 	}
@@ -496,5 +496,10 @@ func (f *FileSelector) Selected() (paths []string) {
 
 func (f *FileSelector) SetPath(path string) {
 	f.path = path
+	f.refreshList()
+}
+
+func (f *FileSelector) SetValidFilename(fn func(path string) bool) {
+	f.validFilename = fn
 	f.refreshList()
 }

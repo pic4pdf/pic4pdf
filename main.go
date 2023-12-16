@@ -29,7 +29,7 @@ func main() {
 	}
 
 	fileSel := gui.NewFileSelectorPersistent("Main")
-	fileSel.ValidFilename = validFilename
+	fileSel.SetValidFilename(validFilename)
 	closeWatcher := fileSel.CreateSimpleWatcher()
 	defer closeWatcher()
 
