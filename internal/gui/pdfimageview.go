@@ -171,11 +171,16 @@ func (iv *PDFImageView) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (iv *PDFImageView) MouseIn(e *desktop.MouseEvent) {
-	iv.desc.Hide()
-	iv.descRect.Hide()
 }
 
 func (iv *PDFImageView) MouseMoved(e *desktop.MouseEvent) {
+	if e.Position.Y < 50 {
+		iv.desc.Hide()
+		iv.descRect.Hide()
+	} else {
+		iv.desc.Show()
+		iv.descRect.Show()
+	}
 }
 
 func (iv *PDFImageView) MouseOut() {
