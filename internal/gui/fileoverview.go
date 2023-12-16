@@ -70,22 +70,30 @@ func (fo *FileOverview) ExtendBaseWidget(w fyne.Widget) {
 	fo.moveUpFull = widget.NewButtonWithIcon("", theme.MoveUpIcon(), func() { moveFileItem(true, true) })
 	selectedFileID := -1
 
-	fo.list.OnSelected = func(id widget.ListItemID) {
-		if id == len(fo.paths)-1 {
+	refreshButtons := func() {
+		id := selectedFileID
+		if len(fo.paths) == 0 {
+			id = -1
+		}
+		if id == -1 || id == len(fo.paths)-1 {
 			fo.moveDown.Disable()
 			fo.moveDownFull.Disable()
 		} else {
 			fo.moveDown.Enable()
 			fo.moveDownFull.Enable()
 		}
-		if id == 0 {
+		if id == -1 || id == 0 {
 			fo.moveUp.Disable()
 			fo.moveUpFull.Disable()
 		} else {
 			fo.moveUp.Enable()
 			fo.moveUpFull.Enable()
 		}
+	}
+
+	fo.list.OnSelected = func(id widget.ListItemID) {
 		selectedFileID = id
+		refreshButtons()
 	}
 
 	moveFileItem = func(up bool, full bool) {
@@ -127,6 +135,7 @@ func (fo *FileOverview) ExtendBaseWidget(w fyne.Widget) {
 		if fo.OnSelected != nil {
 			fo.OnSelected(path)
 		}
+		refreshButtons()
 		fo.list.Refresh()
 	}
 
@@ -137,6 +146,7 @@ func (fo *FileOverview) ExtendBaseWidget(w fyne.Widget) {
 		if fo.OnUnselected != nil {
 			fo.OnUnselected(path)
 		}
+		refreshButtons()
 		fo.list.Refresh()
 	}
 

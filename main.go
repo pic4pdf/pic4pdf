@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"image"
 	_ "image/jpeg"
@@ -26,7 +25,13 @@ func main() {
 	w := a.NewWindow("pic4pdf")
 	w.Resize(fyne.NewSize(800, 600))
 
+	validFilename := func(name string) bool {
+		ext := strings.ToLower(filepath.Ext(name))
+		return ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".webp"
+	}
+
 	fileSel := gui.NewFileSelectorPersistent("Main")
+	fileSel.ValidFilename = validFilename
 	closeWatcher := fileSel.CreateSimpleWatcher()
 	defer closeWatcher()
 
@@ -67,25 +72,38 @@ func main() {
 	fileOw.OnSelected = func(path string) {
 		f, err := os.Open(path)
 		if err != nil {
-			panic(err)
+			dialog.ShowError(err, w)
+			return
 		}
 		defer f.Close()
 		img, _, err := image.Decode(f)
 		if err != nil {
-			panic(err)
+			dialog.ShowError(fmt.Errorf("Invalid image '%v': %w", filepath.Base(path), err), w)
+			return
 		}
 		imgs[path] = img
 		l.Refresh()
 	}
 
-	w.SetOnDropped(func(p fyne.Position, u []fyne.URI) {
-		for _, files := range u {
-			err := ValidateFile(files.Path())
-			if err != nil {
-				dialog.ShowError(fmt.Errorf("%v isn't a valid file.\nReason: %v", files.Path(), err), w)
-				return
+	w.SetOnDropped(func(_ fyne.Position, uris []fyne.URI) {
+		added := 0
+		for _, uri := range uris {
+			path := uri.Path()
+			if !validFilename(path) {
+				continue
 			}
-			fileSel.Select(files.Path())
+			added++
+			fileSel.Select(path)
+		}
+		if added != len(uris) {
+			n := len(uris)-added
+			var e error
+			if n == 1 {
+				e = fmt.Errorf("could not add file with unsupported format")
+			} else {
+				e = fmt.Errorf("could not add %v files with unsupported format", n)
+			}
+			dialog.ShowError(e, w)
 		}
 	})
 
@@ -159,39 +177,4 @@ func main() {
 
 	w.SetContent(split)
 	w.ShowAndRun()
-}
-
-func ValidateFile(path string) error {
-	//Check if the file is valid, and then adds it to the selector
-	f, err := os.Open(path)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	zeroBytes, _ := f.Stat()
-	if zeroBytes.Size() <= 1 {
-		return errors.New("file has 0 bytes")
-	}
-
-	/// Valid extensions: png, jpg, webp, jpeg
-	validExt := []string{".png", ".jpg", ".jpeg", ".webp"}
-
-	// Extract and normalize the file extension
-	fileExt := strings.ToLower(filepath.Ext(path))
-
-	// Check if the file extension is in the valid list
-	valid := false
-	for _, v := range validExt {
-		if fileExt == strings.ToLower(v) {
-			valid = true
-			break
-		}
-	}
-
-	if !valid {
-		return errors.New("invalid file type")
-	}
-	f.Close()
-	return nil
 }

@@ -121,8 +121,9 @@ type FileSelector struct {
 	listMessage   *widget.Label
 	obj           *fyne.Container
 
-	OnSelected   func(path string)
-	OnUnselected func(path string)
+	OnSelected    func(path string)
+	OnUnselected  func(path string)
+	ValidFilename func(name string) bool
 
 	path                 string
 	next                 []string
@@ -150,7 +151,6 @@ func (f *FileSelector) refreshList() {
 	var res []fs.DirEntry
 	for _, ent := range ents {
 		name := ent.Name()
-		ext := strings.ToLower(filepath.Ext(name))
 		if !f.showHidden.Checked && strings.HasPrefix(name, ".") {
 			continue
 		}
@@ -159,7 +159,7 @@ func (f *FileSelector) refreshList() {
 				continue
 			}
 		}
-		if ent.IsDir() || ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".gif" || ext == ".webp" {
+		if ent.IsDir() || f.ValidFilename == nil || f.ValidFilename(name) {
 			res = append(res, ent)
 		}
 	}
