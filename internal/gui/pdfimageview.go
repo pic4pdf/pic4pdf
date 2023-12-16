@@ -9,6 +9,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
+	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/widget"
 	p4p "github.com/pic4pdf/lib-p4p"
 	"golang.org/x/image/draw"
@@ -34,6 +35,7 @@ type PDFImageView struct {
 
 	img  *canvas.Image
 	desc *widget.Label
+	descRect *canvas.Rectangle
 	lock sync.Mutex
 }
 
@@ -151,16 +153,29 @@ func (iv *PDFImageView) SetDescription(text string) {
 
 func (iv *PDFImageView) ExtendBaseWidget(w fyne.Widget) {
 	iv.BaseWidget.ExtendBaseWidget(w)
+	iv.descRect = canvas.NewRectangle(color.RGBA{128, 128, 128, 235})
+	iv.descRect.CornerRadius = 4
 }
 
 func (iv *PDFImageView) CreateRenderer() fyne.WidgetRenderer {
 	r := &pdfImageViewRenderer{
 		iv:       iv,
 		bg:       canvas.NewRectangle(color.RGBA{255, 255, 255, 255}),
-		descRect: canvas.NewRectangle(color.RGBA{128, 128, 128, 235}),
 	}
-	r.descRect.CornerRadius = 4
 	return r
+}
+
+func (iv *PDFImageView) MouseIn(e *desktop.MouseEvent) {
+	iv.desc.Hide()
+	iv.descRect.Hide()
+}
+
+func (iv *PDFImageView) MouseMoved(e *desktop.MouseEvent) {
+}
+
+func (iv *PDFImageView) MouseOut() {
+	iv.desc.Show()
+	iv.descRect.Show()
 }
 
 type pdfImageViewRenderer struct {
@@ -209,8 +224,8 @@ func (r *pdfImageViewRenderer) Layout(size fyne.Size) {
 		))
 	}
 	r.iv.desc.Move(fyne.NewPos(5, 5).AddXY(oX, oY))
-	r.descRect.Move(fyne.NewPos(5, 5).AddXY(oX, oY))
-	r.descRect.Resize(r.iv.desc.MinSize())
+	r.iv.descRect.Move(fyne.NewPos(5, 5).AddXY(oX, oY))
+	r.iv.descRect.Resize(r.iv.desc.MinSize())
 	r.iv.lock.Unlock()
 	r.bg.Move(fyne.NewPos(oX, oY))
 	r.bg.Resize(effSize)
@@ -232,7 +247,7 @@ func (r *pdfImageViewRenderer) Objects() []fyne.CanvasObject {
 	if r.iv.img != nil {
 		objs = append(objs, r.iv.img)
 	}
-	objs = append(objs, r.descRect, r.iv.desc)
+	objs = append(objs, r.iv.descRect, r.iv.desc)
 	r.iv.lock.Unlock()
 	return objs
 }
