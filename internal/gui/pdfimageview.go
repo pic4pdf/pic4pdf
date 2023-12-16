@@ -33,10 +33,10 @@ type PDFImageView struct {
 	imgW float64
 	imgH float64
 
-	img  *canvas.Image
-	desc *widget.Label
+	img      *canvas.Image
+	desc     *widget.Label
 	descRect *canvas.Rectangle
-	lock sync.Mutex
+	lock     sync.Mutex
 }
 
 func (iv *PDFImageView) rerenderImage() {
@@ -164,8 +164,8 @@ func (iv *PDFImageView) ExtendBaseWidget(w fyne.Widget) {
 
 func (iv *PDFImageView) CreateRenderer() fyne.WidgetRenderer {
 	r := &pdfImageViewRenderer{
-		iv:       iv,
-		bg:       canvas.NewRectangle(color.RGBA{255, 255, 255, 255}),
+		iv: iv,
+		bg: canvas.NewRectangle(color.RGBA{255, 255, 255, 255}),
 	}
 	return r
 }

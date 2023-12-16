@@ -2,10 +2,8 @@ package main
 
 import (
 	"fmt"
-	"image"
 	_ "image/jpeg"
 	_ "image/png"
-	"os"
 	"path/filepath"
 	"strings"
 
@@ -36,53 +34,10 @@ func main() {
 	defer closeWatcher()
 
 	fileOw := gui.NewFileOverview(fileSel)
-	layoutMode := p4p.Fit
-	scale := float64(1)
 
-	imgs := make(map[string]image.Image)
-
-	l := widget.NewList(
-		func() int {
-			return fileOw.NumSelected()
-		},
-		func() fyne.CanvasObject {
-			iv := gui.NewPDFImageView(p4p.Millimeter, p4p.A4())
-			iv.SetMinSize(fyne.NewSize(0, 300))
-			return iv
-		},
-		func(id widget.ListItemID, obj fyne.CanvasObject) {
-			sel := fileOw.Selected()
-			iv := obj.(*gui.PDFImageView)
-			if id < len(sel) {
-				iv.SetDescription(fmt.Sprintf("%v/%v (%v)", id+1, len(sel), filepath.Base(sel[id])))
-				if img, ok := imgs[sel[id]]; ok {
-					iv.SetOptions(p4p.ImageOptions{
-						Mode:  layoutMode,
-						Scale: scale,
-					})
-					iv.SetImage(img)
-				}
-			}
-		},
-	)
-	l.OnSelected = func(widget.ListItemID) {
-		l.UnselectAll()
-	}
-
-	fileOw.OnSelected = func(path string) {
-		f, err := os.Open(path)
-		if err != nil {
-			dialog.ShowError(err, w)
-			return
-		}
-		defer f.Close()
-		img, _, err := image.Decode(f)
-		if err != nil {
-			dialog.ShowError(fmt.Errorf("Invalid image '%v': %w", filepath.Base(path), err), w)
-			return
-		}
-		imgs[path] = img
-		l.Refresh()
+	pv := gui.NewPDFPreview(fileOw, p4p.Millimeter, p4p.A4())
+	pv.OnError = func(err error) {
+		dialog.ShowError(err, w)
 	}
 
 	w.SetOnDropped(func(_ fyne.Position, uris []fyne.URI) {
@@ -96,7 +51,7 @@ func main() {
 			fileSel.Select(path)
 		}
 		if added != len(uris) {
-			n := len(uris)-added
+			n := len(uris) - added
 			var e error
 			if n == 1 {
 				e = fmt.Errorf("could not add file with unsupported format")
@@ -107,14 +62,6 @@ func main() {
 		}
 	})
 
-	fileOw.OnUnselected = func(path string) {
-		delete(imgs, path)
-		l.Refresh()
-	}
-	fileOw.OnReorder = func() {
-		l.Refresh()
-	}
-
 	var options *widget.Accordion
 	{
 		var scaleSld *widget.Slider
@@ -123,21 +70,20 @@ func main() {
 			func(s string) {
 				switch s {
 				case "Center":
-					layoutMode = p4p.Center
+					pv.SetLayout(p4p.Center)
 				case "Fill":
-					layoutMode = p4p.Fill
+					pv.SetLayout(p4p.Fill)
 				case "Fit":
-					layoutMode = p4p.Fit
+					pv.SetLayout(p4p.Fit)
 				}
 				scaleSld.SetValue(1)
-				l.Refresh()
 			},
 		)
 		layoutModeSel.Selected = "Fit"
-		scaleLabel := widget.NewLabel(fmt.Sprintf("%.1f", scale))
+		scaleLabel := widget.NewLabel(fmt.Sprintf("%.1f", pv.Scale))
 		var scaleReset *widget.Button
 		scaleSld = widget.NewSlider(0.2, 4)
-		scaleSld.Value = scale
+		scaleSld.Value = pv.Scale
 		scaleSld.Step = 0.1
 		scaleSld.OnChanged = func(v float64) {
 			if v == 1 {
@@ -148,8 +94,7 @@ func main() {
 			scaleLabel.SetText(fmt.Sprintf("%.1f", v))
 		}
 		scaleSld.OnChangeEnded = func(v float64) {
-			scale = v
-			l.Refresh()
+			pv.SetScale(v)
 		}
 		scaleReset = widget.NewButtonWithIcon("", theme.ContentUndoIcon(), func() {
 			scaleSld.SetValue(1)
@@ -170,7 +115,7 @@ func main() {
 			fileOw,
 		),
 		container.NewBorder(
-			nil, options, nil, nil, l,
+			nil, options, nil, nil, pv,
 		),
 	)
 	split.Offset = 0.6
