@@ -7,7 +7,7 @@ require (
 	github.com/adrg/xdg v0.4.0
 	github.com/deepakjois/gousbdrivedetector v0.0.0-20220514003247-ea439de1c459
 	github.com/fsnotify/fsnotify v1.7.0
-	github.com/pic4pdf/lib-p4p v0.0.0-20231208050635-b83c1acbbe67
+	github.com/pic4pdf/lib-p4p v0.0.0-20240219003935-f35b4cb3ebd6
 	golang.org/x/image v0.11.0
 )
 

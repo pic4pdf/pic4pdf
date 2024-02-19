@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"image"
 	"image/color"
+	"math"
 	"math/rand"
 	"sync"
 
@@ -18,7 +19,6 @@ import (
 type PDFImageView struct {
 	widget.BaseWidget
 
-	pdf      *p4p.P4P
 	imgOpts  p4p.ImageOptions
 	minSize  fyne.Size
 	imgData  image.Image
@@ -39,6 +39,12 @@ type PDFImageView struct {
 	lock     sync.Mutex
 }
 
+// Requires iv.lock to be locked!
+func (iv *PDFImageView) getConvPageSize() (w, h float64) {
+	s := iv.pageSize.Convert(iv.unit)
+	return s.W, s.H
+}
+
 func (iv *PDFImageView) rerenderImage() {
 	fmt.Printf("Rerender (rand ID: %02x)\n", rand.Intn(0xFF))
 	iv.lock.Lock()
@@ -48,19 +54,26 @@ func (iv *PDFImageView) rerenderImage() {
 	}
 	img := iv.imgData
 	pxBounds := img.Bounds()
-	if x1, y1, x2, y2, mustCrop := iv.pdf.CalcImageCropCoords(pxBounds.Dx(), pxBounds.Dy(), iv.imgOpts); mustCrop {
+	x, y, w, h, cropX1, cropY1, cropX2, cropY2, crop := p4p.Render(iv.pageSize, iv.unit, pxBounds.Dx(), pxBounds.Dy(), iv.imgOpts)
+	// Crop image.
+	if crop {
 		if subImg, ok := img.(interface {
 			SubImage(r image.Rectangle) image.Image
 		}); ok {
-			img = subImg.SubImage(image.Rect(x1, y1, x2, y2))
+			img = subImg.SubImage(image.Rect(cropX1, cropY1, cropX2+1, cropY2+1))
 		} else {
 			panic("image must support SubImage")
 		}
 	}
+	// Calculate image coords.
 	{
-		b := img.Bounds()
-		iv.imgX, iv.imgY, iv.imgW, iv.imgH = iv.pdf.CalcImageLayout(b.Dx(), b.Dy(), iv.imgOpts)
+		pgW, pgH := iv.getConvPageSize()
+		iv.imgX = math.Max(0, x)
+		iv.imgY = math.Max(0, y)
+		iv.imgW = math.Min(pgW, w)
+		iv.imgH = math.Min(pgH, h)
 	}
+	// Downscale image.
 	{
 		src := img
 		srcSz := src.Bounds().Size()
@@ -83,7 +96,6 @@ func (iv *PDFImageView) rerenderImage() {
 
 func NewPDFImageView(unit p4p.Unit, pageSize p4p.PageSize) *PDFImageView {
 	iv := &PDFImageView{
-		pdf:      p4p.New(unit, pageSize),
 		desc:     widget.NewLabel(""),
 		unit:     unit,
 		pageSize: pageSize,
@@ -116,7 +128,6 @@ func (iv *PDFImageView) SetParams(unit p4p.Unit, pageSize p4p.PageSize) {
 		iv.lock.Unlock()
 		return
 	}
-	iv.pdf = p4p.New(unit, pageSize)
 	iv.unit = unit
 	iv.pageSize = pageSize
 	iv.lock.Unlock()
@@ -198,7 +209,7 @@ type pdfImageViewRenderer struct {
 
 func (r *pdfImageViewRenderer) refreshMinSize() {
 	r.iv.lock.Lock()
-	pgW, pgH := r.iv.pdf.PageSize()
+	pgW, pgH := r.iv.getConvPageSize()
 	if r.iv.minSize.Width == 0 {
 		r.minSize = fyne.NewSize(r.iv.minSize.Height*float32(pgW)/float32(pgH), r.iv.minSize.Height)
 	} else if r.iv.minSize.Height == 0 {
@@ -215,7 +226,7 @@ func (r *pdfImageViewRenderer) Destroy() {
 func (r *pdfImageViewRenderer) Layout(size fyne.Size) {
 	r.refreshMinSize()
 	r.iv.lock.Lock()
-	pgW, pgH := r.iv.pdf.PageSize()
+	pgW, pgH := r.iv.getConvPageSize()
 	var effSize fyne.Size
 	if float32(pgW/pgH) > size.Width/size.Height {
 		effSize = fyne.NewSize(size.Width, size.Width*float32(pgH)/float32(pgW))

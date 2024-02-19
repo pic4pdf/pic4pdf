@@ -121,10 +121,10 @@ type FileSelector struct {
 	listMessage   *widget.Label
 	obj           *fyne.Container
 
-	OnSelected    func(path string)
-	OnUnselected  func(path string)
+	OnSelected   func(path string)
+	OnUnselected func(path string)
 
-	validFilename func(name string) bool
+	validFilename        func(name string) bool
 	path                 string
 	next                 []string
 	selected             map[string]struct{}
@@ -402,6 +402,8 @@ func (f *FileSelector) CreateWatcher(onError func(error)) (close func() error, e
 	if err != nil {
 		return nil, err
 	}
+	f.watcher = w
+
 	func() {
 		go func() {
 			for {
@@ -433,7 +435,6 @@ func (f *FileSelector) CreateWatcher(onError func(error)) (close func() error, e
 		}
 	}()
 
-	f.watcher = w
 	f.watcher.Add(f.path)
 
 	return func() error {
