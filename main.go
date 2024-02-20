@@ -4,7 +4,9 @@ import (
 	"fmt"
 	_ "image/jpeg"
 	_ "image/png"
+	"math"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"fyne.io/fyne/v2"
@@ -100,7 +102,92 @@ func main() {
 			scaleSld.SetValue(1)
 		})
 		scaleReset.Disable()
+		var pageSizeSel *widget.Select
+		pageSizeW := widget.NewEntry()
+		pageSizeW.Scroll = container.ScrollNone
+		pageSizeW.Wrapping = fyne.TextWrapOff
+		pageSizeW.OnChanged = func(s string) {
+			pageSizeSel.SetSelected("Custom")
+			v, _ := strconv.ParseFloat(s, 64)
+			ps := pv.PageSize.Convert(pv.Unit)
+			ps.W = v
+			pv.SetPageSize(ps)
+		}
+		pageSizeH := widget.NewEntry()
+		pageSizeH.Scroll = container.ScrollNone
+		pageSizeH.Wrapping = fyne.TextWrapOff
+		pageSizeH.OnChanged = func(s string) {
+			pageSizeSel.SetSelected("Custom")
+			v, _ := strconv.ParseFloat(s, 64)
+			ps := pv.PageSize.Convert(pv.Unit)
+			ps.H = v
+			pv.SetPageSize(ps)
+		}
+		updatePageSize := func() {
+			ps := pv.PageSize.Convert(pv.Unit)
+			pageSizeW.Text = strconv.FormatFloat(math.Round(ps.W*100)/100, 'f', -1, 64)
+			pageSizeW.Refresh()
+			pageSizeH.Text = strconv.FormatFloat(math.Round(ps.H*100)/100, 'f', -1, 64)
+			pageSizeH.Refresh()
+		}
+		pageSizeRotate := widget.NewButtonWithIcon("", theme.MediaReplayIcon(), func() {
+			pv.SetPageSize(pv.PageSize.Rotate())
+			updatePageSize()
+		})
+		pageSizeUnitSel := widget.NewSelect(
+			[]string{"pt", "mm", "cm", "in"},
+			func(s string) {
+				switch s {
+				case "pt":
+					pv.SetUnit(p4p.Point)
+				case "mm":
+					pv.SetUnit(p4p.Millimeter)
+				case "cm":
+					pv.SetUnit(p4p.Centimeter)
+				case "in":
+					pv.SetUnit(p4p.Inch)
+				}
+				updatePageSize()
+			},
+		)
+		pageSizeUnitSel.Selected = "mm"
+		pageSizeSel = widget.NewSelect(
+			[]string{"A4", "A5", "A6", "Letter", "Legal", "Tabloid", "A3", "A2", "A1", "Custom"},
+			func(s string) {
+				switch s {
+				case "A4":
+					pv.SetPageSize(p4p.A4())
+				case "A5":
+					pv.SetPageSize(p4p.A5())
+				case "A6":
+					pv.SetPageSize(p4p.A6())
+				case "Letter":
+					pv.SetPageSize(p4p.Letter())
+				case "Legal":
+					pv.SetPageSize(p4p.Legal())
+				case "Tabloid":
+					pv.SetPageSize(p4p.Tabloid())
+				case "A3":
+					pv.SetPageSize(p4p.A3())
+				case "A2":
+					pv.SetPageSize(p4p.A2())
+				case "A1":
+					pv.SetPageSize(p4p.A1())
+				case "Custom":
+					return
+				}
+				updatePageSize()
+			},
+		)
+		pageSizeSel.SetSelected("A4")
+		pageSizeCustomize := container.NewBorder(
+			nil, nil,
+			container.NewHBox(pageSizeW, widget.NewLabel("x"), pageSizeH),
+			nil,
+			container.NewBorder(nil, nil, nil, pageSizeRotate, pageSizeUnitSel),
+		)
 		form := widget.NewForm(
+			widget.NewFormItem("Page", container.NewVBox(pageSizeSel, pageSizeCustomize)),
 			widget.NewFormItem("Layout Mode", layoutModeSel),
 			widget.NewFormItem("Scale", container.NewBorder(nil, nil, scaleLabel, scaleReset, scaleSld)),
 		)

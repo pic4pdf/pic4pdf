@@ -14,9 +14,11 @@ import (
 type PDFPreview struct {
 	widget.BaseWidget
 
-	OnError func(error)
-	Layout  p4p.Mode
-	Scale   float64
+	OnError  func(error)
+	Layout   p4p.Mode
+	Scale    float64
+	Unit     p4p.Unit
+	PageSize p4p.PageSize
 
 	Overview *FileOverview
 
@@ -31,6 +33,8 @@ func NewPDFPreview(ow *FileOverview, unit p4p.Unit, pageSize p4p.PageSize) *PDFP
 		Layout:   p4p.Fit,
 		Scale:    1,
 		Overview: ow,
+		Unit:     unit,
+		PageSize: pageSize,
 	}
 	il.ExtendBaseWidget(il)
 	return il
@@ -46,6 +50,16 @@ func (il *PDFPreview) SetScale(sc float64) {
 	il.Refresh()
 }
 
+func (il *PDFPreview) SetUnit(u p4p.Unit) {
+	il.Unit = u
+	il.Refresh()
+}
+
+func (il *PDFPreview) SetPageSize(s p4p.PageSize) {
+	il.PageSize = s
+	il.Refresh()
+}
+
 func (il *PDFPreview) ExtendBaseWidget(w fyne.Widget) {
 	il.BaseWidget.ExtendBaseWidget(w)
 	il.imgs = make(map[string]image.Image)
@@ -54,7 +68,7 @@ func (il *PDFPreview) ExtendBaseWidget(w fyne.Widget) {
 			return il.Overview.NumSelected()
 		},
 		func() fyne.CanvasObject {
-			iv := NewPDFImageView(p4p.Millimeter, p4p.A4())
+			iv := NewPDFImageView(il.Unit, il.PageSize)
 			iv.SetMinSize(fyne.NewSize(0, 300))
 			return iv
 		},
@@ -69,6 +83,7 @@ func (il *PDFPreview) ExtendBaseWidget(w fyne.Widget) {
 						Scale: il.Scale,
 					})
 					iv.SetImage(img)
+					iv.SetParams(il.Unit, il.PageSize)
 				}
 			}
 		},
