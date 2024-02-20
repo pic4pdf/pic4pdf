@@ -16,6 +16,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	p4p "github.com/pic4pdf/lib-p4p"
+	_ "golang.org/x/image/webp"
 
 	"github.com/pic4pdf/pic4pdf/internal/gui"
 )
